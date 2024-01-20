@@ -1,0 +1,95 @@
+---
+title: "lab1_practice_doc"
+author: "Lily"
+format: 
+  html:
+    code-fold: true
+    toc: true
+execute: 
+  echo: true
+  message: false
+  warning: false
+editor: visual
+---
+
+```{r setup}
+
+library(tidyverse)
+library(gapminder)
+library(janitor)
+```
+
+# Analysis Part 1
+
+For each year and each continent, summarize the average per-capita GDP across all countries in the continent (hint: don't just average the country-level gdpPercap values, you need to consider the population of each country!).
+
+```{r}
+df <- gapminder
+
+mean_df <- df |>
+  group_by(year, continent) |>
+  summarize(avg_gdp = sum(gdpPercap * pop) / sum(pop), log_gdp = log(avg_gdp)) |>
+  ungroup()
+
+```
+
+Plot these in a scatter plot.
+(Bonus, plot the country-level values as well, with a low alpha to fade them into the background) Redo your scatter plot, but with a log transform on the per-capita GDP (either transform in the dataframe using `mutate`, or on the plot using scale_y_log10())
+
+```{r}
+df_plot <- ggplot(mean_df, aes(x= year, y = avg_gdp, color = continent))+
+  geom_line() +
+  geom_jitter(data = gapminder, aes(y = gdpPercap), alpha = .2) +
+  theme_bw() +
+  labs(x = 'Year', y = 'Per capita GDP ($)', color = 'Continent')
+df_plot
+```
+```{r}
+df_log_plot <- ggplot(mean_df, aes(x= year, y = log_gdp, color = continent))+
+  geom_line() +
+  theme_bw() +
+  labs(x = 'Year', y = 'Log Per capita GDP ($)', color = 'Continent')
+df_log_plot
+```
+
+#Analysis Part 2
+Based on the plots, choose either the log-transformed or non-transformed data for the next part.
+On the original Gapminder data (not your summarized data), use linear regression to estimate the annual change in per capita GDP OR log(per capita GDP), accounting for continent.
+
+```{r}
+log_lm<-lm(log_gdp ~ year  + as.factor(continent), data=mean_df) #linear model (lm) 
+log_lm # gets only the coefficients
+summary(log_lm) #gets the statistical output
+
+log_lm_coef <- coefficients(log_lm)
+log_lm_coef
+
+```
+
+
+
+#Followup questions:
+
+##Write a sentence or two describing the trends you see in the plots.  Which model (log or not) did you choose and why?
+
+All continents show a general trend of increasing GDP over time, however, Africa shows an interesting dip in GDP, with Asia overtaking it around 1978. This trend is difficult to see in the non logarithmic plot, so I would recommend the use of the logarithmic plot for this model. 
+
+## Write a sentence or two to explain the coefficients on your linear model output, including statistical significance.  
+
+Oceana has the largest increase in logGDP per year at 2.24, followed by Europe (1.97), the Americas (1.95), and then Asia (0.11). All are statistically significant (p<0.05) except Asia. 
+
+
+##Which continent is the "reference" continent?
+Africa is the reference continent due to it being the first alphabetically. 
+
+##What does the "year" coefficient represent? hint: this is trickier if you went with the log-transformed model!
+
+The year coefficient, since it is in log form, represents the growth rate of each corresponding coefficient multiplied by 100. 
+
+##What do the coefficients on each continent represent?  Do these make intuitive sense?
+
+The coefficients for each continent represent the rate at which GDP increases each year that passes. 
+
+##Does a linear model seem like a good way to approach these data?  Why or why not?
+
+Yes, the logarithmic linear model does fit the data well, as shown by the high R squared value and low p-values. The log transformation fits well due to the exponential nature of GDP data. 
